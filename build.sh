@@ -20,7 +20,7 @@ osc create -f - <<EOF
 kind: BuildConfig
 apiVersion: v1beta1
 metadata:
-  name: frontend-build
+  name: frontend
   labels:
     component: frontend
 triggers:
@@ -31,12 +31,12 @@ parameters:
   strategy:
     type: STI
     stiStrategy:
-      image: cicddemo/sti-httpd
+      image: docker.io/cicddemo/sti-httpd
   source:
     type: Git
     git:
       ref: master
-      uri: http://gogs.gogs/$PROJECT/frontend
+      uri: http://gogs.gogs.svc/$PROJECT/frontend
   output:
     to:
       name: frontend
