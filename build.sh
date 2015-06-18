@@ -3,7 +3,7 @@
 cd $(dirname $0)
 
 . utils
-. ../environment
+. ../../environment
 
 PROJECT=$(osc status | sed -n '1 { s/.* //; p; }')
 
@@ -36,7 +36,7 @@ parameters:
     type: Git
     git:
       ref: master
-      uri: http://gogs.gogs.svc/$PROJECT/frontend
+      uri: http://gogs.$INFRA/$PROJECT/frontend
   output:
     to:
       name: frontend

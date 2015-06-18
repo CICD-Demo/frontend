@@ -3,7 +3,7 @@
 cd $(dirname $0)
 
 . utils
-. ../environment
+. ../../environment
 
 PROJECT=$(osc status | sed -n '1 { s/.* //; p; }')
 
@@ -68,6 +68,12 @@ items:
       component: frontend
 EOF
 
+if [ $PROJECT = $PROD ]; then
+  ROUTE=monster.$DOMAIN
+else
+  ROUTE=monster.$PROJECT.$DOMAIN
+fi
+
 osc create -f - <<EOF
 kind: Route
 apiVersion: v1beta1
@@ -75,6 +81,6 @@ metadata:
   name: frontend
   labels:
     component: frontend
-host: $PROJECT.example.com
+host: $ROUTE
 serviceName: frontend
 EOF
