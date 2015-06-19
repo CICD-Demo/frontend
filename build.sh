@@ -11,18 +11,20 @@ osc create -f - <<EOF || true
 kind: ImageStream
 apiVersion: v1beta1
 metadata:
-  name: frontend
+  name: reverseproxy
   labels:
-    component: frontend
+    service: reverseproxy
+    function: frontend
 EOF
 
 osc create -f - <<EOF
 kind: BuildConfig
 apiVersion: v1beta1
 metadata:
-  name: frontend
+  name: reverseproxy
   labels:
-    component: frontend
+    service: reverseproxy
+    function: frontend
 triggers:
 - type: generic
   generic:
@@ -36,8 +38,8 @@ parameters:
     type: Git
     git:
       ref: master
-      uri: http://gogs.$INFRA/$PROJECT/frontend
+      uri: http://gogs.$INFRA/$PROJECT/reverseproxy
   output:
     to:
-      name: frontend
+      name: reverseproxy
 EOF

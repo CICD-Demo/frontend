@@ -19,9 +19,9 @@ osc create -f - <<EOF || true
 kind: ImageStream
 apiVersion: v1beta1
 metadata:
-  name: frontend
+  name: reverseproxy
   labels:
-    service: frontend
+    service: reverseproxy
     function: frontend
 EOF
 
@@ -32,9 +32,9 @@ items:
 - kind: DeploymentConfig
   apiVersion: v1beta1
   metadata:
-    name: frontend
+    name: reverseproxy
     labels:
-      service: frontend
+      service: reverseproxy
       function: frontend
   triggers:
   - type: ConfigChange
@@ -42,9 +42,9 @@ items:
     imageChangeParams:
       automatic: true
       containerNames:
-      - frontend
+      - reverseproxy
       from:
-        name: frontend
+        name: reverseproxy
       tag: latest
   template:
     strategy:
@@ -52,42 +52,42 @@ items:
     controllerTemplate:
       replicas: $REPLICAS
       replicaSelector:
-        service: frontend
+        service: reverseproxy
         function: frontend
       podTemplate:
         desiredState:
           manifest:
             version: v1beta2
             containers:
-            - name: frontend
-              image: frontend:latest
+            - name: reverseproxy
+              image: reverseproxy:latest
               ports:
               - containerPort: 80
         labels:
-          service: frontend
+          service: reverseproxy
           function: frontend
 
 - kind: Service
   apiVersion: v1beta3
   metadata:
-    name: frontend
+    name: reverseproxy
     labels:
-      service: frontend
+      service: reverseproxy
       function: frontend
   spec:
     ports:
     - port: 80
     selector:
-      service: frontend
+      service: reverseproxy
       function: frontend
 
 - kind: Route
   apiVersion: v1beta1
   metadata:
-    name: frontend
+    name: reverseproxy
     labels:
-      service: frontend
+      service: reverseproxy
       function: frontend
   host: $ROUTE
-  serviceName: frontend
+  serviceName: reverseproxy
 EOF
