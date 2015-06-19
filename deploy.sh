@@ -7,13 +7,22 @@ cd $(dirname $0)
 
 PROJECT=$(osc status | sed -n '1 { s/.* //; p; }')
 
+if [ $PROJECT = $PROD ]; then
+  ROUTE=monster.$DOMAIN
+  REPLICAS=2
+else
+  ROUTE=monster.$PROJECT.$DOMAIN
+  REPLICAS=1
+fi
+
 osc create -f - <<EOF || true
 kind: ImageStream
 apiVersion: v1beta1
 metadata:
   name: frontend
   labels:
-    component: frontend
+    service: frontend
+    function: frontend
 EOF
 
 osc create -f - <<EOF
@@ -25,7 +34,8 @@ items:
   metadata:
     name: frontend
     labels:
-      component: frontend
+      service: frontend
+      function: frontend
   triggers:
   - type: ConfigChange
   - type: ImageChange
@@ -40,9 +50,10 @@ items:
     strategy:
       type: Recreate
     controllerTemplate:
-      replicas: 1
+      replicas: $REPLICAS
       replicaSelector:
-        component: frontend
+        service: frontend
+        function: frontend
       podTemplate:
         desiredState:
           manifest:
@@ -53,34 +64,30 @@ items:
               ports:
               - containerPort: 80
         labels:
-          component: frontend
+          service: frontend
+          function: frontend
 
 - kind: Service
   apiVersion: v1beta3
   metadata:
     name: frontend
     labels:
-      component: frontend
+      service: frontend
+      function: frontend
   spec:
     ports:
     - port: 80
     selector:
-      component: frontend
-EOF
+      service: frontend
+      function: frontend
 
-if [ $PROJECT = $PROD ]; then
-  ROUTE=monster.$DOMAIN
-else
-  ROUTE=monster.$PROJECT.$DOMAIN
-fi
-
-osc create -f - <<EOF
-kind: Route
-apiVersion: v1beta1
-metadata:
-  name: frontend
-  labels:
-    component: frontend
-host: $ROUTE
-serviceName: frontend
+- kind: Route
+  apiVersion: v1beta1
+  metadata:
+    name: frontend
+    labels:
+      service: frontend
+      function: frontend
+  host: $ROUTE
+  serviceName: frontend
 EOF
