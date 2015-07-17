@@ -5,7 +5,7 @@ cd $(dirname $0)
 . utils
 . ../../environment
 
-PROJECT=$(osc status | sed -n '1 { s/.* //; p; }')
+PROJECT=$(oc status | sed -n '1 { s/.* //;s/(//;s/)//;  p; }')
 
 if [ $PROJECT = $PROD ]; then
   ROUTE=monster.$DOMAIN
@@ -15,9 +15,9 @@ else
   REPLICAS=1
 fi
 
-osc create -f - <<EOF || true
+oc create -f - <<EOF || true
 kind: ImageStream
-apiVersion: v1beta1
+apiVersion: v1
 metadata:
   name: reverseproxy
   labels:
@@ -25,17 +25,35 @@ metadata:
     function: frontend
 EOF
 
-osc create -f - <<EOF
+oc create -f - <<EOF
 kind: List
-apiVersion: v1beta3
+apiVersion: v1
 items:
 - kind: DeploymentConfig
-  apiVersion: v1beta1
+  apiVersion: v1
   metadata:
     name: reverseproxy
     labels:
       service: reverseproxy
       function: frontend
+  spec:
+    replicas: $REPLICAS
+    selector:
+      service: reverseproxy
+      function: frontend
+    strategy:
+      type: Recreate
+    template:
+      metadata:
+        labels:
+          service: reverseproxy
+          function: frontend
+      spec:
+        containers:
+        - name: reverseproxy
+          image: reverseproxy:latest
+          ports:
+          - containerPort: 80
   triggers:
   - type: ConfigChange
   - type: ImageChange
@@ -44,31 +62,11 @@ items:
       containerNames:
       - reverseproxy
       from:
-        name: reverseproxy
-      tag: latest
-  template:
-    strategy:
-      type: Recreate
-    controllerTemplate:
-      replicas: $REPLICAS
-      replicaSelector:
-        service: reverseproxy
-        function: frontend
-      podTemplate:
-        desiredState:
-          manifest:
-            version: v1beta2
-            containers:
-            - name: reverseproxy
-              image: reverseproxy:latest
-              ports:
-              - containerPort: 80
-        labels:
-          service: reverseproxy
-          function: frontend
+        kind: ImageStreamTag
+        name: reverseproxy:latest
 
 - kind: Service
-  apiVersion: v1beta3
+  apiVersion: v1
   metadata:
     name: reverseproxy
     labels:
@@ -82,12 +80,15 @@ items:
       function: frontend
 
 - kind: Route
-  apiVersion: v1beta1
+  apiVersion: v1
   metadata:
     name: reverseproxy
     labels:
       service: reverseproxy
       function: frontend
-  host: $ROUTE
-  serviceName: reverseproxy
+  spec:
+    host: $ROUTE
+    to:
+      kind: Service
+      name: reverseproxy
 EOF
