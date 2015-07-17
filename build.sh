@@ -5,35 +5,29 @@ cd $(dirname $0)
 . utils
 . ../../environment
 
-PROJECT=$(osc status | sed -n '1 { s/.* //; p; }')
+PROJECT=$(oc status | sed -n '1 { s/.* //;s/(//;s/)//;  p; }')
 
-osc create -f - <<EOF || true
-kind: ImageStream
-apiVersion: v1beta1
-metadata:
-  name: reverseproxy
-  labels:
-    service: reverseproxy
-    function: frontend
-EOF
 
-osc create -f - <<EOF
+oc create -f - <<EOF
 kind: BuildConfig
-apiVersion: v1beta1
+apiVersion: v1
 metadata:
   name: reverseproxy
   labels:
     service: reverseproxy
     function: frontend
-triggers:
-- type: generic
-  generic:
-    secret: secret
-parameters:
+spec:
+  triggers:
+  - type: generic
+    generic:
+      secret: secret
   strategy:
-    type: STI
-    stiStrategy:
-      image: docker.io/cicddemo/sti-httpd
+    type: Source
+    sourceStrategy:
+      from:
+        kind: ImageStreamTag
+        name: sti-httpd:latest
+        namespace: openshift
   source:
     type: Git
     git:
